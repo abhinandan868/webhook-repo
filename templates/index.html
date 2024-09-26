@@ -2,56 +2,34 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GitHub Webhook Events</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            line-height: 1.6;
-            color: #333;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
+    <title>Webhook Updates</title>
+    <script>
+        function fetchData() {
+            fetch('/fetch-data')
+                .then(response => response.json())
+                .then(data => {
+                    let content = '';
+                    data.forEach(item => {
+                        content += `<p>${item.timestamp} - ${item.type} by ${item.author} (Branch: ${item.to_branch})</p>`;
+                    });
+                    document.getElementById('webhook-data').innerHTML = content;
+                })
+                .catch(error => console.error('Error fetching data:', error));
         }
-        h1 {
-            color: #0366d6;
-        }
-        ul {
-            list-style-type: none;
-            padding: 0;
-        }
-        li {
-            background-color: #f6f8fa;
-            border: 1px solid #e1e4e8;
-            border-radius: 3px;
-            padding: 10px;
-            margin-bottom: 10px;
-        }
-        .event-type {
-            font-weight: bold;
-            color: #0366d6;
-        }
-        .timestamp {
-            color: #586069;
-            font-size: 0.9em;
-        }
-    </style>
+
+        // Fetch data every 15 seconds
+        setInterval(fetchData, 15000);
+
+        // Fetch data when page loads
+        window.onload = fetchData;
+    </script>
 </head>
 <body>
-    <h1>GitHub Webhook Events</h1>
-    <ul>
-        {% for event in events %}
-            <li>
-                <span class="event-type">{{ event.event_type.upper() }}</span>: {{ event.message }}
-                <br>
-                <span class="timestamp">{{ event.timestamp.strftime("%Y-%m-%d %H:%M:%S UTC") }}</span>
-            </li>
-        {% endfor %}
-    </ul>
-    <script>
-        setTimeout(function() {
-            location.reload();
-        }, 15000);
-    </script>
+    <h1>Recent Webhook Events</h1>
+    <div id="webhook-data">
+        <!-- Data from MongoDB will be inserted here -->
+    </div>
 </body>
 </html>
