@@ -1,56 +1,79 @@
-from flask import Flask, request, jsonify
-import logging
+from flask import Flask, request, jsonify, render_template
+from pymongo import MongoClient
+from datetime import datetime
+import os
+import json
 
 app = Flask(__name__)
 
-# Set up logging
-logging.basicConfig(level=logging.DEBUG)
+mongodb_uri = 'mongodb://localhost:27017/'
+client = MongoClient(mongodb_uri)
+db = client['webHookups']
+collection = db['changes']
 
-@app.before_request
-def log_request_info():
-    app.logger.debug('Headers: %s', request.headers)
-    app.logger.debug('Body: %s', request.get_data())
-
-@app.route('/webhook', methods=['POST', 'GET'])
-def webhook():
+@app.route('/', methods=['GET', 'POST'])
+def webhook_and_fetch_data():
     if request.method == 'POST':
-        # Process the GitHub data
+        # Handle the incoming webhook request and store data in MongoDB
         data = request.json
-        # Add your logic to handle the GitHub event data here
-        app.logger.info(f"Received event: {request.headers.get('X-GitHub-Event')}")
-        app.logger.info(f"Payload: {data}")
-        return jsonify({"message": "Webhook received successfully"}), 200
+        event_type = request.headers.get('X-GitHub-Event')
+
+        if event_type == 'push':
+            author = data['pusher']['name']
+            to_branch = data['ref'].split('/')[-1]
+            timestamp = datetime.utcnow().strftime("%d %B %Y - %I:%M %p UTC")
+
+            action = {
+                'type': 'PUSH',
+                'author': author,
+                'to_branch': to_branch,
+                'timestamp': timestamp
+            }
+
+        elif event_type == 'pull_request':
+            author = data['pull_request']['user']['login']
+            from_branch = data['pull_request']['head']['ref']
+            to_branch = data['pull_request']['base']['ref']
+            timestamp = datetime.utcnow().strftime("%d %B %Y - %I:%M %p UTC")
+
+            action = {
+                'type': 'PULL_REQUEST',
+                'author': author,
+                'from_branch': from_branch,
+                'to_branch': to_branch,
+                'timestamp': timestamp
+            }
+
+        elif event_type == 'pull_request' and data['action'] == 'closed' and data['pull_request']['merged']:
+            author = data['pull_request']['merged_by']['login']
+            from_branch = data['pull_request']['head']['ref']
+            to_branch = data['pull_request']['base']['ref']
+            timestamp = datetime.utcnow().strftime("%d %B %Y - %I:%M %p UTC")
+
+            action = {
+                'type': 'MERGE',
+                'author': author,
+                'from_branch': from_branch,
+                'to_branch': to_branch,
+                'timestamp': timestamp
+            }
+        else:
+            return jsonify({'message': 'Unsupported event type'}), 400
+
+        collection.insert_one(action)
+        return jsonify({'message': 'Webhook received and processed successfully'}), 200
+
     elif request.method == 'GET':
-        return jsonify({
-            "message": "This is the webhook endpoint. Please use POST method to send data.",
-            "supported_methods": ["POST"],
-            "current_method": request.method
-        }), 200
-    else:
-        return jsonify({
-            "error": "Method not allowed",
-            "supported_methods": ["POST", "GET"],
-            "current_method": request.method
-        }), 405
+        # Handle the GET request to fetch data from MongoDB and display on the HTML page
+        return render_template('index.html')
 
-@app.route('/')
-def home():
-    return jsonify({
-        "message": "Welcome to the webhook server",
-        "endpoints": {
-            "/webhook": "POST to send webhook data, GET for information"
-        }
-    }), 200
 
-@app.errorhandler(Exception)
-def handle_exception(e):
-    # Log the exception
-    app.logger.error(f"An error occurred: {str(e)}")
-    # Return a JSON response
-    return jsonify({
-        "error": "An internal error occurred",
-        "details": str(e)
-    }), 500
+@app.route('/fetch-data', methods=['GET'])
+def fetch_data():
+    # Fetch all documents from the collection
+    data = list(collection.find({}, {'_id': 0}))  # Exclude '_id' field
+    return jsonify(data)
+
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+    app.run(debug=True)
