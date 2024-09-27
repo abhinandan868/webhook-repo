@@ -1,10 +1,67 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Webhook Updates</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f4f7f9;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+        }
+
+        #webhook-data {
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        #webhook-data p {
+            font-size: 1rem;
+            line-height: 1.6;
+            border-bottom: 1px solid #e1e1e1;
+            padding-bottom: 10px;
+            margin-bottom: 10px;
+        }
+
+        #webhook-data p:last-child {
+            border-bottom: none;
+        }
+
+        /* For mobile devices */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+
+            h1 {
+                font-size: 2rem;
+            }
+
+            #webhook-data {
+                padding: 15px;
+            }
+
+            #webhook-data p {
+                font-size: 0.9rem;
+            }
+        }
+    </style>
     <script>
         function fetchData() {
             fetch('/fetch-data')
@@ -26,10 +83,12 @@
         window.onload = fetchData;
     </script>
 </head>
+
 <body>
     <h1>Recent Webhook Events</h1>
     <div id="webhook-data">
         <!-- Data from MongoDB will be inserted here -->
     </div>
 </body>
+
 </html>

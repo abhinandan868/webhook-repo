@@ -71,7 +71,7 @@ def webhook_and_fetch_data():
 @app.route('/fetch-data', methods=['GET'])
 def fetch_data():
     # Fetch all documents from the collection
-    data = list(collection.find({}, {'_id': 0}))  # Exclude '_id' field
+    data = list(collection.find({}, {'_id': 0})) 
     return jsonify(data)
 
 
